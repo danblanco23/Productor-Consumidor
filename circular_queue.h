@@ -6,5 +6,4 @@ typedef struct Node{
 Node* first = NULL;
 Node* last = NULL;
 
-void createQueue(Process process);
-struct Process dequeue();
+void createQueue(int length);
