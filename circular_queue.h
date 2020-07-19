@@ -1,9 +1,21 @@
+#define SIZE 4
+
+
+
 typedef struct Node{
     int id;
-    struct Node *next;
+    char text[100];
+    
 } Node;
 
-Node* first = NULL;
-Node* last = NULL;
 
-void createQueue(int length);
+
+typedef struct Queue{
+    Node items[SIZE];
+} Queue;
+
+int isFull(Queue* cola);
+int isEmpty(Queue* cola);
+void enQueue(Queue* cola,Node element);
+int deQueue();
+void display(Queue* cola);
