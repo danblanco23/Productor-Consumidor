@@ -6,26 +6,37 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <time.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
 #include "shared.h"
-#include "circular_queue.h"
+#include "circular_queue.c"
 
 int main()
 {
+    int key;
+    int time;
+    int processID;
+    //Pide comandos
+    printf("Shared memory id: ");
+    scanf("%d",&key);
+
+    printf("Tiempo de espera: ");
+    scanf("%d",&time);
+
+    printf("Process number: ");
+    scanf("%d",&processID);
+
     int running = 1;
     void *shared_memory = (void *)0;
     struct Node *object;
     Queue *cola;
+    
     int shmid;
-    int mykey = getuid();
-
-    srand((unsigned int)getpid());    
-
-    shmid = shmget((key_t)mykey, sizeof(struct Queue), 0666 | IPC_CREAT);
+    
+    shmid = shmget(key, sizeof(struct Queue), 0);
 
     if (shmid == -1) {
         fprintf(stderr, "shmget failed\n");
@@ -48,8 +59,22 @@ int main()
  which makes the producer wait. */
 
     cola = (struct Queue *)shared_memory;
-    printf("You wrote: %d", cola->items[0].id);
-    printf("You wrote: %d", cola->items[1].id);
+    while(running) {
+        sleep(2);
+        int rand_num = (rand() %  (time*2-1+1));
+        printf("Num rand: %d\n",rand_num);
+        if(time ==  rand_num && cola->active == 0){
+            printf("Num rand: %d\n",rand_num);
+            cola->active = 1;
+            Node *consumido = deQueue(cola);
+            
+            printf("Proceso: %d , Consumido: %d\n", processID,consumido->id);
+            cola->active = 0;
+
+        }
+        
+    }
+    
     // while(running) {
     //     if (shared_stuff->written_by_you) {
     //         printf("You wrote: %s", shared_stuff->some_text);

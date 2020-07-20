@@ -14,41 +14,57 @@
 #include "circular_queue.c"
 int main()
 {
+    int key;
+    int time;
+    //Pide comandos
+    printf("Shared memory id: ");
+    scanf("%d",&key);
+
+    printf("Tiempo de espera: ");
+    scanf("%d",&time);
+
+
+
+
+
     int running = 1;
     void *shared_memory = (void *)0;
     struct Node *object;
     Queue *cola;
-    char buffer[TEXT_SZ ];
     int shmid;
-    int mykey = getuid();
 
-    //createQueue(3);
-
-    //printf("Nodo %d",first->next->id);
-    shmid = shmget((key_t)mykey, sizeof(struct Queue), 0666 | IPC_CREAT);
+    shmid = shmget(key, sizeof(struct Queue), 0666 | IPC_CREAT); //setea memoria compartida
 
     if (shmid == -1) {
         fprintf(stderr, "shmget failed\n");
         exit(EXIT_FAILURE);
     }
 
-    shared_memory = shmat(shmid, 0, 0);  //id, direccion de inicio, bandera read,write,exec
+    shared_memory = shmat(shmid, 0, 0);  //id, direccion de inicio, bandera read,write,exec , la vuelve usable
     if (shared_memory == (void *)-1) {
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
-
-    //printf("Memory attached at %X\n", (int)shared_memory);
-
+    int cont = 0;
     cola = (struct Queue *)shared_memory;
-    cola->items[0].id =3;
-    cola->items[1].id =10;
+    cola->back = -1;
+    cola->front = -1;
     
-    
-    while(running){
-        printf("Enter some text: ");
-        fgets(buffer, BUFSIZ, stdin);
+    while(cont<=9){
+        
+        object = (struct Node*)malloc(sizeof(struct Node));
+        object->id=cont;
+        strcpy(object->text,"Texto");
+        enQueue(cola,*object);
+        cont+=1;
     }
+    cola->active =0;
+    while(running){
+
+
+    }
+        
+    // }
     // while(running) {
     //     // while(shared_stuff->written_by_you == 1) {
     //     //     sleep(1);            
