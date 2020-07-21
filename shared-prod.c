@@ -50,7 +50,7 @@ int main()
     cola->back = -1;
     cola->front = -1;
     
-    while(cont<=9){
+    while(cont<=50){
         
         object = (struct Node*)malloc(sizeof(struct Node));
         object->id=cont;
@@ -63,24 +63,6 @@ int main()
 
 
     }
-        
-    // }
-    // while(running) {
-    //     // while(shared_stuff->written_by_you == 1) {
-    //     //     sleep(1);            
-    //     //     printf("waiting for client...\n");
-    //     // }
-    //     printf("Enter some text: ");
-    //     fgets(buffer, BUFSIZ, stdin);
-        
-    //     //strncpy(shared_stuff->some_text, buffer, TEXT_SZ);
-    //     shared_stuff->written_by_you = 1;
-
-    //     if (strncmp(buffer, "end", 3) == 0) {
-    //             running = 0;
-    //     }
-    // }
-
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);

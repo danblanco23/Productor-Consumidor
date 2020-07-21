@@ -10,9 +10,37 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 
 #include "shared.h"
 #include "circular_queue.c"
+
+int semid;
+
+struct sembuf sem_oper; 
+union semun
+ {
+               int val;
+               struct semid_ds *semstat;
+               unsigned short *array;
+  }
+arg;
+
+void wait(int id)
+{
+      sem_oper.sem_num=id;  //actuamos sobre el semáforo id
+      sem_oper.sem_op=-1;   //decremento
+      sem_oper.sem_flg=SEM_UNDO; // Para evitar interbloqueos
+      semop(semid, &sem_oper,1);
+}
+
+void signal(int id)
+{
+      sem_oper.sem_num=id;  //actuamos sobre el semáforo id
+      sem_oper.sem_op=1;    //incremento
+      sem_oper.sem_flg=SEM_UNDO; // Para evitar interbloqueos
+      semop(semid, &sem_oper,1);
+}
 
 int main()
 {
@@ -28,6 +56,10 @@ int main()
 
     printf("Process number: ");
     scanf("%d",&processID);
+
+
+
+    
 
     int running = 1;
     void *shared_memory = (void *)0;
@@ -51,42 +83,48 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    //printf("Memory attached at %X\n", (int)shared_memory);
-
-/* The next portion of the program assigns the shared_memory segment to shared_stuff,
- which then prints out any text in written_by_you. The loop continues until end is found
- in written_by_you. The call to sleep forces the consumer to sit in its critical section,
- which makes the producer wait. */
 
     cola = (struct Queue *)shared_memory;
-    while(running) {
-        sleep(2);
-        int rand_num = (rand() %  (time*2-1+1));
-        printf("Num rand: %d\n",rand_num);
-        if(time ==  rand_num && cola->active == 0){
-            printf("Num rand: %d\n",rand_num);
-            cola->active = 1;
-            Node *consumido = deQueue(cola);
-            
-            printf("Proceso: %d , Consumido: %d\n", processID,consumido->id);
-            cola->active = 0;
 
-        }
-        
-    }
+
+    semid=semget(rand(),1,0777|IPC_CREAT);
+
+    // inicializar los semáforos
+     
+    arg.array=(unsigned short *) malloc(sizeof(short)*1);
+        arg.array[0]=0;
+        semctl (semid,1,SETALL,arg);
+
     
-    // while(running) {
-    //     if (shared_stuff->written_by_you) {
-    //         printf("You wrote: %s", shared_stuff->some_text);
-    //         sleep( rand() % 4 ); /* make the other process wait for us ! */
-    //         shared_stuff->written_by_you = 0;
-    //         if (strncmp(shared_stuff->some_text, "end", 3) == 0) {
-    //             running = 0;
-    //         }
-    //     }
-    // }
+    while(running) {
 
-/* Lastly, the shared memory is detached and then deleted. */
+        int pid = fork();
+
+        if(pid == 0){       //proceso hijo, liberador del semaforo
+            sleep(2);
+            int rand_num = (rand() %  (time*2-1+1));
+            printf("Num rand: %d\n",rand_num);
+            if(time ==  rand_num && cola->active == 0){
+                printf("Puede consumir!\n");
+                signal(0); //puedes consumir
+            }
+            if(time ==  rand_num && cola->active == 1){
+                printf("La memoria compartida esta ocupada :(\n");
+                
+            }
+        }
+        else{   //proceso padre , en espera de semaforo para accesar a zona critica
+            wait(0); // ver si se puede accesar
+            printf("Accesando zona critica...\n");
+            cola->active = 1;                                                    //Inicio critica
+            Node *consumido = deQueue(cola);                                     //Zona critica
+            printf("Proceso: %d , Consumido: %d\n", processID,consumido->id);    //Zona critica
+            cola->active = 0;                                                    //Zona critica
+            printf("Fin de zona critica...\n");
+            wait(0);                                                             //Fin de zona critica 
+                                                     
+        }
+    }
 
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "shmdt failed\n");
