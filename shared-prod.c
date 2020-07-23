@@ -49,6 +49,7 @@ int main()
     cola = (struct Queue *)shared_memory;
     cola->back = -1;
     cola->front = -1;
+    cola->end=1;
     
     while(cont<=50){
         

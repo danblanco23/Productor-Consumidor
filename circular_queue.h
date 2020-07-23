@@ -15,6 +15,7 @@ typedef struct Queue{
     int front;
     int back;
     int active;
+    int end;
 } Queue;
 
 

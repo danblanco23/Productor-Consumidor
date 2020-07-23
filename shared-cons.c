@@ -96,7 +96,7 @@ int main()
         semctl (semid,1,SETALL,arg);
 
     
-    while(running) {
+    while(cola->end) {
 
         int pid = fork();
 
@@ -125,16 +125,19 @@ int main()
                                                      
         }
     }
+    printf("Consumidor %d terminando.. bye!\n", processID);
 
-    if (shmdt(shared_memory) == -1) {
-        fprintf(stderr, "shmdt failed\n");
-        exit(EXIT_FAILURE);
-    }
 
-    if (shmctl(shmid, IPC_RMID, 0) == -1) {
-        fprintf(stderr, "shmctl(IPC_RMID) failed\n");
-        exit(EXIT_FAILURE);
-    }
 
-    exit(EXIT_SUCCESS);
+    // if (shmdt(shared_memory) == -1) {
+    //     fprintf(stderr, "shmdt failed\n");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // if (shmctl(shmid, IPC_RMID, 0) == -1) {
+    //     fprintf(stderr, "shmctl(IPC_RMID) failed\n");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    //exit(EXIT_SUCCESS);
 }
