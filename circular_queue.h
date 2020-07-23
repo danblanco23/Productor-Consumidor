@@ -1,9 +1,29 @@
+#define SIZE 20
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <semaphore.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 typedef struct Node{
     int id;
-    struct Node *next;
+    char text[100];
+
 } Node;
 
-Node* first = NULL;
-Node* last = NULL;
+typedef struct Queue{
+    Node items[SIZE];
+    int first;
+    int last;
+    int active;
+    int aux;
+    sem_t semaphore;
+} Queue;
 
-void createQueue(int length);
+int isFull(Queue* queue);
+int isEmpty(Queue* queue);
+void enQueue(Queue* queue,Node node);
+Node *deQueue(Queue* queue);
+void display(Queue* queue);
