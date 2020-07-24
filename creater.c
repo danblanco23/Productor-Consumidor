@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     queue->last = -1;
     queue->first = -1;
     queue->active = 0;
-    queue->aux = 0;
+    queue->finish = 1;
 
     if (sem_init(&queue->semaphore, 1, 1) == 0)
         fprintf(stderr, "sem failed\n");

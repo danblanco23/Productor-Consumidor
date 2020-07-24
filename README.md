@@ -1,7 +1,11 @@
 # Productor-Consumidor
 
-Para compilar: gcc archivo.c -o archivo -lrt
+Para compilar: 
 
-gcc creater.c -o c -lrt -pthread
+creater: gcc creater.c -o c -lrt -pthread
 
-gcc producer.c -o p -lrt -pthread -lm
+producer: gcc producer.c -o p -lrt -pthread -lm
+
+consumer: gcc consumer.c -o con -lrt -pthread -lm
+
+finalizer: gcc finalizer.c -o f

@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <semaphore.h>
 
+#include <math.h>
+#include <time.h>
+
 #include "circular_queue.c"
 
 #define SM_CONSUMERS_NAME  "/consumersQuantity"
@@ -66,17 +69,17 @@ int main(int argc, char* argv[])
     Queue *queue;
     int shmid;
     int key;
-    int time;
-    int processId;
-
+    int inputTime;
+    int waitingTime;
+    int consumerId;
     int fileDescriptorConsumers;
     char buf[1];
 
     increaseConsumersQuantity(fileDescriptorConsumers, buf);
 
     key = atoi(argv[1]);
-    //time = atoi(argv[2]);
-    //processId = atoi(argv[3]);
+    inputTime = atoi(argv[2]);
+    consumerId = atoi(argv[3]);
 
     srand((unsigned int)getpid());
 
@@ -96,7 +99,37 @@ int main(int argc, char* argv[])
     }
 
     queue = (struct Queue *)shared_memory;
-//    while(1) {
+
+    while(queue->finish) {
+        if(queue->active == 1){
+            printf("bloqueado \n");
+            waitingTime = (rand() % inputTime + 2);
+        }
+        else{
+            queue->active = 1;
+            sem_wait(&queue->semaphore);
+            printf("leyendo \n");
+
+            Node *readed = deQueue(queue);
+            if (readed == NULL);
+            {
+                waitingTime = (rand() % inputTime + 2);
+                queue->active = 0;
+                sem_post(&queue->semaphore);
+            }
+
+            printf("Proceso: %d , Consumido: %s\n", consumerId, readed->text);
+
+            waitingTime = (rand() % inputTime + 2);
+            queue->active = 0;
+            sem_post(&queue->semaphore);
+        }
+
+        sleep(waitingTime);
+        //delay(waitingTime);
+        inputTime = inputTime+2;
+    }
+
 //        sleep(2);
 //        int rand_num = (rand() %  (time*2-1+1));
 //        printf("Num rand: %d\n",rand_num);
@@ -109,18 +142,6 @@ int main(int argc, char* argv[])
 //            queue->active = 0;
 //        }
 //    }
-
-    int x = 1000;
-    for(int i = 0; i < x; i++){
-
-        sem_wait(&queue->semaphore);
-        queue->aux = queue->aux - 1;
-        sleep(1);
-        printf(" XXXX %d", queue->aux);
-        sem_post(&queue->semaphore);
-        //sleep(2);
-    }
-    printf(" XXXX %d", queue->aux);
 
 
 /* Lastly, the shared memory is detached and then deleted. */

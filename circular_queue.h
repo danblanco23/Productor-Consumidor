@@ -9,6 +9,7 @@
 
 typedef struct Node{
     int id;
+    int randomKey;
     char text[100];
 
 } Node;
@@ -18,7 +19,7 @@ typedef struct Queue{
     int first;
     int last;
     int active;
-    int aux;
+    int finish;
     sem_t semaphore;
 } Queue;
 

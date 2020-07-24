@@ -23,6 +23,7 @@
 #define TEXT_SZ 2048
 
 char message[200];
+int randomKey;
 
 void increaseProducersQuantity(int fileDescriptorProducers, char buf[]){
     struct stat shmobj_st;
@@ -88,7 +89,7 @@ void generateMessage(int pId)
 {
     char randomkeyC[2];
 
-    int randomKey = rand() % 5 + 0;
+    randomKey = rand() % 5 + 0;
 
     sprintf(randomkeyC, "%u", randomKey);
     sprintf(message, "%u", pId);
@@ -97,7 +98,7 @@ void generateMessage(int pId)
     struct tm *tlocal = localtime(&tiempo);
     char datetime[150];
     strftime(datetime,150,"%d/%m/%y %H:%M:%S",tlocal);
-    printf("%s\n",datetime);
+    //printf("%s\n",datetime);
 
     strcat(message, "  ");
     strcat(message, randomkeyC);
@@ -119,14 +120,14 @@ int main(int argc, char* argv[])
     int inputTime;
     int waitingTime;
     int fileDescriptorProducers;
-    int pId;
+    int producerId;
     char buf[1];
 
     increaseProducersQuantity(fileDescriptorProducers, buf);
 
     mykey = atoi(argv[1]);
     inputTime = atoi(argv[2]);
-    pId = atoi(argv[3]);
+    producerId = atoi(argv[3]);
 
     shmid = shmget((key_t)mykey, sizeof(struct Queue), 0);
 
@@ -149,7 +150,7 @@ int main(int argc, char* argv[])
 
     printf("espera %d", waitingTime);
 
-    while(1){
+    while(queue->finish){
         if(queue->active == 1){
             printf("bloqueado \n");
             waitingTime = (rand() % inputTime + 2);
@@ -157,15 +158,17 @@ int main(int argc, char* argv[])
         else{
             queue->active = 1;
             sem_wait(&queue->semaphore);
-            printf("escribiendo \n");
+            printf("\n escribiendo \n");
 
-            generateMessage(pId);
+            generateMessage(producerId);
 
             node = (struct Node*)malloc(sizeof(struct Node));
-            node->id = pId;
+            node->id = producerId;
+            node->randomKey = randomKey;
             strcpy(node->text, message);
-            printf("%d", pId);
+            //printf("%d", producerId);
             enQueue(queue,*node);
+            display(queue);
             waitingTime = (rand() % inputTime + 2);
             queue->active = 0;
             sem_post(&queue->semaphore);
