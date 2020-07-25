@@ -119,11 +119,11 @@ int main(int argc, char* argv[])
     int mykey;
     int inputTime;
     int waitingTime;
-    int fileDescriptorProducers;
     int producerId;
     char buf[1];
+    int tiempoEspera = 0;
+    int totalProducido = 0;
 
-    increaseProducersQuantity(fileDescriptorProducers, buf);
 
     mykey = atoi(argv[1]);
     inputTime = atoi(argv[2]);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    /* We now make the shared memory accessible to the program. */
+    /* Hacemos memoria compartida accesible al programa */
     shared_memory = shmat(shmid, 0, 0);
     if (shared_memory == (void *)-1) {
         fprintf(stderr, "shmat failed\n");
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
     }
 
     queue = (struct Queue *)shared_memory;
-
+    queue->productores = queue->productores +1;
     srand((unsigned)time(NULL));
     //waitingTime = rand() % 10 + 2;
 
@@ -154,6 +154,7 @@ int main(int argc, char* argv[])
         if(queue->active == 1){
             printf("bloqueado \n");
             waitingTime = (rand() % inputTime + 2);
+            tiempoEspera += waitingTime;
         }
         else{
             queue->active = 1;
@@ -168,8 +169,10 @@ int main(int argc, char* argv[])
             strcpy(node->text, message);
             //printf("%d", producerId);
             enQueue(queue,*node);
+            queue->mensajesProducidos = queue->mensajesProducidos +1;
             display(queue);
             waitingTime = (rand() % inputTime + 2);
+            tiempoEspera += waitingTime;
             queue->active = 0;
             sem_post(&queue->semaphore);
         }
@@ -178,17 +181,21 @@ int main(int argc, char* argv[])
         //delay(waitingTime);
         inputTime = inputTime+2;
     }
-
+    printf("Productor %d terminando ... bye!\n\n",producerId);
+    queue->productores = queue->productores -1;
     /* Lastly, the shared memory is detached and then deleted. */
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);
     }
 
-//    if (shmctl(shmid, IPC_RMID, 0) == -1) {
-//        fprintf(stderr, "shmctl(IPC_RMID) failed\n");
-//        exit(EXIT_FAILURE);
-//    }
+    //Imprimir estadisticas aca
+    printf("*************************Estadisticas del productor %d*************************\n", producerId);
+    printf("Mensajes producidos: %d\n", totalProducido);
+    printf("Tiempo bloqueado por semaforo: %d\n", tiempoEspera);
+
+
+
 
     exit(EXIT_SUCCESS);
 }

@@ -21,6 +21,10 @@ typedef struct Queue{
     int active;
     int finish;
     sem_t semaphore;
+    int productores;
+    int consumidores;
+    int mensajesProducidos;
+    int mensajesConsumidos;
 } Queue;
 
 int isFull(Queue* queue);

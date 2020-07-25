@@ -61,6 +61,20 @@ void increaseConsumersQuantity(int fileDescriptorConsumers, char buf[]){
     printf("%s \n", buf);
     close(fileDescriptorConsumers);
 }
+int validateTermination(Node * consumed, int PID){
+    int keyMessage = consumed->randomKey;
+    int keyConsumer = PID % 5;
+
+    if(keyMessage == keyConsumer){
+        printf("Mensaje de terminacion leido! PID modulo 5: %d , Llave del mensaje: %d\n", keyConsumer,keyMessage);
+        return 0;
+    } 
+    else{
+        return 1;
+    } 
+
+
+}
 
 
 int main(int argc, char* argv[])
@@ -72,10 +86,10 @@ int main(int argc, char* argv[])
     int inputTime;
     int waitingTime;
     int consumerId;
-    int fileDescriptorConsumers;
     char buf[1];
+    int tiempoEspera = 0;
+    int totalConsumido = 0;
 
-    increaseConsumersQuantity(fileDescriptorConsumers, buf);
 
     key = atoi(argv[1]);
     inputTime = atoi(argv[2]);
@@ -90,7 +104,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-/* We now make the shared memory accessible to the program. */
+    /* Hacemos memoria compartida accesible al programa */
 
     shared_memory = shmat(shmid, 0, 0);
     if (shared_memory == (void *)-1) {
@@ -99,11 +113,14 @@ int main(int argc, char* argv[])
     }
 
     queue = (struct Queue *)shared_memory;
+    queue->consumidores = queue->consumidores +1;
 
     while(queue->finish) {
         if(queue->active == 1){
             printf("bloqueado \n");
             waitingTime = (rand() % inputTime + 2);
+            tiempoEspera += waitingTime;
+
         }
         else{
             queue->active = 1;
@@ -111,15 +128,17 @@ int main(int argc, char* argv[])
             printf("leyendo \n");
 
             Node *readed = deQueue(queue);
+            queue->mensajesConsumidos = queue->mensajesConsumidos +1;
             if (readed == NULL);
             {
                 waitingTime = (rand() % inputTime + 2);
+                tiempoEspera += waitingTime;
                 queue->active = 0;
                 sem_post(&queue->semaphore);
             }
 
             printf("Proceso: %d , Consumido: %s\n", consumerId, readed->text);
-
+            queue->finish = validateTermination(readed, consumerId);
             waitingTime = (rand() % inputTime + 2);
             queue->active = 0;
             sem_post(&queue->semaphore);
@@ -130,30 +149,18 @@ int main(int argc, char* argv[])
         inputTime = inputTime+2;
     }
 
-//        sleep(2);
-//        int rand_num = (rand() %  (time*2-1+1));
-//        printf("Num rand: %d\n",rand_num);
-//        if(time ==  rand_num && queue->active == 0){
-//            printf("Num rand: %d\n",rand_num);
-//            queue->active = 1;
-//            Node *consumido = deQueue(queue);
-//
-//            printf("Proceso: %d , Consumido: %d\n", processId,consumido->id);
-//            queue->active = 0;
-//        }
-//    }
-
-
 /* Lastly, the shared memory is detached and then deleted. */
+    printf("Consumidor %d terminando ... bye!\n",consumerId);
+    queue->consumidores = queue->consumidores -1;
+
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);
     }
 
-    if (shmctl(shmid, IPC_RMID, 0) == -1) {
-        fprintf(stderr, "shmctl(IPC_RMID) failed\n");
-        exit(EXIT_FAILURE);
-    }
-
+    //Imprimir estadisticas aca
+    printf("*************************Estadisticas del consumidor %d*************************\n", consumerId);
+    printf("Mensajes producidos: %d\n", totalConsumido);
+    printf("Tiempo bloqueado por semaforo: %d\n", tiempoEspera);
     exit(EXIT_SUCCESS);
 }
