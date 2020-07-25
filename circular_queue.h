@@ -10,7 +10,7 @@
 typedef struct Node{
     int id;
     int randomKey;
-    char text[100];
+    char text[300];
 
 } Node;
 
@@ -21,10 +21,10 @@ typedef struct Queue{
     int active;
     int finish;
     sem_t semaphore;
-    int productores;
-    int consumidores;
-    int mensajesProducidos;
-    int mensajesConsumidos;
+    int producersQuantity;
+    int consumersQuantity;
+    int totalMessagesProduced;
+    int totalMessagesConsumed;
 } Queue;
 
 int isFull(Queue* queue);

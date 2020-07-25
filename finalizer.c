@@ -26,10 +26,10 @@ int main(int argc, char* argv[])
     queue = (struct Queue *)shared_memory;
     queue->finish = 0;
     printf("*************************Estadisticas Globales*************************\n");
-    printf("Total productores creados: %d\n", queue->productores);
-    printf("Total consumidores creados: %d\n", queue->consumidores);
-    printf("Total mensajes producidos: %d\n", queue->mensajesProducidos);
-    printf("Total mensajes consumidos: %d\n", queue->mensajesConsumidos);
+    printf("Total productores creados: %d\n", queue->producersQuantity);
+    printf("Total consumidores creados: %d\n", queue->consumersQuantity);
+    printf("Total mensajes producidos: %d\n", queue->totalMessagesProduced);
+    printf("Total mensajes consumidos: %d\n", queue->totalMessagesConsumed);
 
     //Liberamos memoria compartida
     shmctl(shmid, IPC_RMID, NULL);

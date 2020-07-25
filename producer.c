@@ -25,47 +25,6 @@
 char message[200];
 int randomKey;
 
-void increaseProducersQuantity(int fileDescriptorProducers, char buf[]){
-    struct stat shmobj_st;
-    char *ptr;
-
-    fileDescriptorProducers = shm_open (SM_PRODUCERS_NAME,  O_RDWR  , 00200); /* open s.m object*/
-    if(fileDescriptorProducers == -1)
-    {
-        printf("Error file descriptor %s\n", strerror(errno));
-        exit(1);
-    }
-
-    if(fstat(fileDescriptorProducers, &shmobj_st) == -1)
-    {
-        printf(" error fstat \n");
-        exit(1);
-    }
-
-    ptr = mmap(NULL, shmobj_st.st_size, PROT_READ, MAP_SHARED, fileDescriptorProducers, 0);
-    if(ptr == MAP_FAILED)
-    {
-        printf("Map failed in write process: %s\n", strerror(errno));
-        exit(1);
-    }
-
-    //agarrar lo que hay en la memoria compartida
-    int pq = atoi(ptr);
-    pq = pq + 1;
-    sprintf(buf, "%u", pq);
-
-    ptr = mmap(NULL, sizeof(buf), PROT_WRITE, MAP_SHARED, fileDescriptorProducers, 0);
-    if(ptr == MAP_FAILED)
-    {
-        printf("Map failed in write process: %s\n", strerror(errno));
-        exit(1);
-    }
-
-    memcpy(ptr,buf, sizeof(buf));
-    printf("%s \n", buf);
-    close(fileDescriptorProducers);
-
-}
 
 double ran_expo(int time){
     double u;
@@ -88,10 +47,12 @@ void delay(int number_of_seconds)
 void generateMessage(int pId)
 {
     char randomkeyC[2];
+    char idC[2];
 
     randomKey = rand() % 5 + 0;
 
     sprintf(randomkeyC, "%u", randomKey);
+    sprintf(idC, "%u", pId);
     sprintf(message, "%u", pId);
 
     time_t tiempo = time(0);
@@ -100,9 +61,12 @@ void generateMessage(int pId)
     strftime(datetime,150,"%d/%m/%y %H:%M:%S",tlocal);
     //printf("%s\n",datetime);
 
-    strcat(message, "  ");
+
+    strcat(message, "Id: ");
+    strcat(message, idC);
+    strcat(message, ", Llave generada:");
     strcat(message, randomkeyC);
-    strcat(message, "  ");
+    strcat(message, ", Fecha y hora: ");
     strcat(message, datetime);
 
     printf("%s", message);
@@ -120,9 +84,9 @@ int main(int argc, char* argv[])
     int inputTime;
     int waitingTime;
     int producerId;
-    char buf[1];
-    int tiempoEspera = 0;
-    int totalProducido = 0;
+    int totalWaitingTime = 0;
+    int totalBlockedTime = 0;
+    int totalMessagesProduced = 0;
 
 
     mykey = atoi(argv[1]);
@@ -144,7 +108,7 @@ int main(int argc, char* argv[])
     }
 
     queue = (struct Queue *)shared_memory;
-    queue->productores = queue->productores +1;
+    queue->producersQuantity = queue->producersQuantity +1;
     srand((unsigned)time(NULL));
     //waitingTime = rand() % 10 + 2;
 
@@ -153,13 +117,15 @@ int main(int argc, char* argv[])
     while(queue->finish){
         if(queue->active == 1){
             printf("bloqueado \n");
-            waitingTime = (rand() % inputTime + 2);
-            tiempoEspera += waitingTime;
+            waitingTime = (rand() % inputTime);
+            totalBlockedTime += waitingTime;
         }
         else{
             queue->active = 1;
             sem_wait(&queue->semaphore);
-            printf("\n escribiendo \n");
+            printf("\n....................Escribiendo................... \n");
+
+            sleep(2);
 
             generateMessage(producerId);
 
@@ -169,20 +135,28 @@ int main(int argc, char* argv[])
             strcpy(node->text, message);
             //printf("%d", producerId);
             enQueue(queue,*node);
-            queue->mensajesProducidos = queue->mensajesProducidos +1;
+
+            printf("\nIndice donde se escribio: %d\n", queue->last);
+            printf("Productores Vivos: %d\n", queue->producersQuantity);
+            printf("Consumidores Vivos: %d\n", queue->consumersQuantity);
+
+            queue->totalMessagesProduced = queue->totalMessagesProduced +1;
+            totalMessagesProduced += 1;
+
             display(queue);
-            waitingTime = (rand() % inputTime + 2);
-            tiempoEspera += waitingTime;
+            waitingTime = (rand() % inputTime);
+            totalWaitingTime += waitingTime;
             queue->active = 0;
             sem_post(&queue->semaphore);
         }
 
         sleep(waitingTime);
+        printf("%d", waitingTime);
         //delay(waitingTime);
         inputTime = inputTime+2;
     }
     printf("Productor %d terminando ... bye!\n\n",producerId);
-    queue->productores = queue->productores -1;
+    queue->producersQuantity = queue->producersQuantity -1;
     /* Lastly, the shared memory is detached and then deleted. */
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "shmdt failed\n");
@@ -191,11 +165,9 @@ int main(int argc, char* argv[])
 
     //Imprimir estadisticas aca
     printf("*************************Estadisticas del productor %d*************************\n", producerId);
-    printf("Mensajes producidos: %d\n", totalProducido);
-    printf("Tiempo bloqueado por semaforo: %d\n", tiempoEspera);
-
-
-
+    printf("Mensajes producidos: %d\n", totalMessagesProduced);
+    printf("Tiempo de espera total: %d\n", totalWaitingTime);
+    printf("Tiempo bloqueado por semaforo total: %d\n", totalBlockedTime);
 
     exit(EXIT_SUCCESS);
 }

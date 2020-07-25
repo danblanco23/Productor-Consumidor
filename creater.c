@@ -45,18 +45,18 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
-    queue = (Queue *) malloc(sizeof(struct Queue *));
+
     queue = (struct Queue *)shared_memory;
     queue->last = -1;
     queue->first = -1;
     queue->active = 0;
     queue->finish = 1;
-    queue->consumidores = 0;
-    queue->productores = 0;
-    queue->mensajesConsumidos = 0;
-    queue->mensajesProducidos = 0;
+    queue->consumersQuantity = 0;
+    queue->producersQuantity = 0;
+    queue->totalMessagesConsumed = 0;
+    queue->totalMessagesProduced = 0;
 
-    if (sem_init(&queue->semaphore, 1, 1) == 0)
+    if (sem_init(&queue->semaphore, 1, 1) == -1)
         fprintf(stderr, "sem failed\n");
 
     sem_wait(&queue->semaphore);
